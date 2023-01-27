@@ -5,13 +5,15 @@ function _0x3df3e5() {
       const _0x429b90 = {
         hVZYu: "screen=memo",
         ZTCcb: "screen=place",
-        HQdSe: "https://raw.githack.com/tiagoribeiro0/testing/main/AutoC",
+        HQdSe:
+          "https://raw.githack.com/tiagoribeiro0/testing/main/AutoCommanderSender.js",
       };
       const _0x595a1a = _0x429b90;
       let _0x472220 = true;
       return function (_0x3386d4, _0x37f008) {
         const _0x36dea8 = {
-          yBTuT: "https://raw.githack.com/tiagoribeiro0/testing/main/AutoComm",
+          yBTuT:
+            "https://raw.githack.com/tiagoribeiro0/testing/main/AutoCommanderSender.js",
           gBnHa: function (_0x3cecd8, _0x38c195) {
             return _0x3cecd8 === _0x38c195;
           },
@@ -70,6 +72,8 @@ function _0x5e8798() {
     window.location.href.includes("screen=place")
   ) {
     _0xb076c8.as = true;
-    $.getScript("https://raw.githack.com/tiagoribeiro0/testing/main/Auto");
+    $.getScript(
+      "https://raw.githack.com/tiagoribeiro0/testing/main/AutoCommanderSender.js"
+    );
   }
 }
