@@ -1,5 +1,5 @@
 // ==UserScript==
-// @name LA Enhancer Auto
+// @name LA Enhancer Auto v2
 // @version 1
 // @description Script que envia quantiade de tropas diferentes para farms cheios e vazios.
 // @match        https://*/game.php?*screen=am_farm*
@@ -14,15 +14,6 @@ w.getCurrentGameTime = function () {
   var serverTime = $("#serverTime").html().split(":");
   var serverDate = $("#serverDate").html().split("/");
   return new Date(serverDate[2], serverDate[1] - 1, serverDate[0], serverTime[0], serverTime[1], serverTime[2], 0);
-};
-
-var botSettings = {
-  botRunning: false,
-};
-
-var botVillageSettings = {
-  skipVillage: false,
-  mode: "useMasterButton",
 };
 
 //Language: English
@@ -251,6 +242,7 @@ w.run = function () {
   if (userset[s.enable_auto_run] != false) {
     applySettings();
   }
+  this.startBot();
 };
 
 w.showAllRows = function () {
@@ -579,10 +571,10 @@ w.showSettings = function () {
           "<tr><td colspan='3'><input type='checkbox' onchange='return updateBotSettings();' id='botRunning'/> On/Off </td><td colspan='3'>" +
           "<input type='checkbox' onchange='return updateBotVillageSettings();' id='botSkipVillage'/> Skip this village </td></tr>" +
           "<tr><td colspan='3'></td><td colspan='3'>Choose which button will be pressed <select id='botVillageMode' onchange='return updateBotVillageSettings();'>" +
-          "<option val='useOnlyA' >useOnlyA</option>" +
-          "<option val='useOnlyB' >useOnlyB</option>" +
-          "<option val='useAforFullAndBforHalf' >useAforFullAndBforHalf</option>" +
-          "<option val='useMasterButton' >Use Master Button Settings</option>" +
+          "<option value='useOnlyA' >useOnlyA</option>" +
+          "<option value='useOnlyB' >useOnlyB</option>" +
+          "<option value='useAforFullAndBforHalf' >useAforFullAndBforHalf</option>" +
+          "<option value='useMasterButton' >Use Master Button Settings</option>" +
           "</select>" +
           "</td></tr>" +
           "</tbody ></table ></div > "
@@ -1607,30 +1599,6 @@ w.updateKeypressSettings = function () {
   w.top.$.jStorage.set("keyPressSettings", keyPressSettings);
 };
 
-w.updateBotSettings = function () {
-  botSettings.botRunning = w.top.$("#botRunning").prop("checked");
-  w.top.$.jStorage.set("botSettings", botSettings);
-};
-
-w.fillBotSettings = function () {
-  botSettings = w.top.$.jStorage.get(`botSettings`);
-  console.log(botSettings);
-  w.top.$("#botRunning").prop("checked", botSettings?.botRunning ?? false);
-};
-
-w.updateBotVillageSettings = function () {
-  botVillageSettings.skipVillage = w.top.$("#botSkipVillage").prop("checked");
-  botVillageSettings.mode = w.top.$("#botVillageMode").val();
-  w.top.$.jStorage.set(`botVillage${w.top.game_data.village.id}Settings`, botSettings);
-};
-
-w.fillBotVillageSettings = function () {
-  botVillageSettings = w.top.$.jStorage.get(`botVillage${w.top.game_data.village.id}Settings`);
-  botVillageSettings.skipVillage = w.top.$("#botSkipVillage").prop("checked", botVillageSettings?.skipVillage ?? false);
-
-  botVillageSettings.mode = w.top.$("#botVillageMode").val(botVillageSettings.mode ?? "useMasterButton");
-};
-
 w.fillKeypressSettings = function () {
   if (w.top.$.jStorage.get("keyPressSettings") == null) {
     w.top.$.jStorage.set("keyPressSettings", keyPressSettings);
@@ -1925,3 +1893,198 @@ w.showNotification = function (type, params, click_callback, title) {
   }
   new Notify(title, properties).show();
 };
+
+/*------------------------------------*/
+/*-------------BOT SECTION------------*/
+/*------------------------------------*/
+var timeOut = null;
+
+class BotSettings {
+  constructor(args) {
+    this.botRunning = args?.botRunning ?? false;
+    this.refreshTime = args?.refreshTime ?? 60; //in seconds
+    this.timeBetweenAttacks = args?.timeBetweenAttacks ?? 400; //in milliseconds
+  }
+}
+
+class BotVillageSettings {
+  constructor(args) {
+    this.skipVillage = args?.skipVillage ?? false;
+    this.mode = args?.mode ?? "useMasterButton";
+  }
+}
+
+var botSettings;
+var botVillageSettings;
+
+w.startBot = async () => {
+  console.log("startBot");
+  fillBotSettings();
+  fillBotVillageSettings();
+  //Wait 5 seconds to start bot
+  await sleep(5000);
+  if (botSettings.botRunning) {
+    if (botVillageSettings.skipVillage) {
+      getNewVillage();
+    } else {
+      waitFor(
+        () => filtersApplied && hasRows(),
+        () => startFarming()
+      );
+    }
+  }
+};
+
+w.updateBotSettings = function () {
+  botSettings.botRunning = w.top.$("#botRunning").prop("checked");
+  if (botSettings.botRunning) {
+    startFarming();
+  }
+  w.top.$.jStorage.set("botSettings", botSettings);
+};
+
+w.fillBotSettings = function () {
+  botSettings = new BotSettings(w.top.$.jStorage.get(`botSettings`));
+  w.top.$("#botRunning").prop("checked", botSettings?.botRunning ?? false);
+};
+
+w.updateBotVillageSettings = function () {
+  botVillageSettings.skipVillage = w.top.$("#botSkipVillage").prop("checked");
+  botVillageSettings.mode = w.top.$("#botVillageMode").val();
+  w.top.$.jStorage.set(`botVillage${w.top.game_data.village.id}Settings`, botVillageSettings);
+};
+
+w.fillBotVillageSettings = function () {
+  botVillageSettings = new BotVillageSettings(w.top.$.jStorage.get(`botVillage${w.top.game_data.village.id}Settings`));
+
+  w.top.$("#botSkipVillage").prop("checked", botVillageSettings.skipVillage);
+  w.top.$("#botVillageMode").val(botVillageSettings.mode);
+};
+
+async function startFarming() {
+  if (!botSettings.botRunning && botVillageSettings.skipVillage) {
+    return;
+  }
+
+  document.title = "Farming...";
+  startTimeout(botSettings.refreshTime * 1000);
+
+  do {
+    if (!botSettings.botRunning) {
+      stopTimeOut();
+      return;
+    }
+    resetTimeout(botSettings.refreshTime * 1000);
+    await farmVillage(botVillageSettings.mode);
+    await sleep(botSettings.timeBetweenAttacks);
+  } while (!checkIfNextVillage() && botSettings.botRunning && cansend && filtersApplied && hasRows());
+}
+
+var fullHaul = "max_loot/1";
+var halfHaul = "max_loot/0";
+
+async function farmVillage(mode) {
+  if (!botSettings.botRunning) return;
+  if (checkIfNextVillage()) return;
+  if (!hasRows()) return;
+
+  var row = w.top.$("#plunder_list tr").filter(":visible").eq(1);
+  var aButton = row.children("td").eq(9).children("a");
+  var bButton = row.children("td").eq(10).children("a");
+  var cButton = row.children("td").eq(11).children("a");
+  var isFullHaul = row.html().includes(fullHaul);
+  switch (mode) {
+    case "useMasterButton":
+      if (cansend && filtersApplied) selectMasterButton(row);
+      break;
+    case "useAButton":
+      if (cansend && filtersApplied) tryClick(aButton);
+      break;
+    case "useBButton":
+      if (cansend && filtersApplied) tryClick(bButton);
+      break;
+    case "useCButton":
+      if (cansend && filtersApplied) tryClick(cButton);
+      break;
+    case "useAforFullAndBforHalf":
+      if (cansend && filtersApplied) {
+        if (isFullHaul) {
+          tryClick(aButton);
+        } else {
+          tryClick(bButton);
+        }
+      }
+      break;
+    default:
+      return;
+  }
+}
+
+function hasRows() {
+  return w.top.$("#plunder_list tr:not(:first-child):visible").length > 0;
+}
+
+function startTimeout(time) {
+  refreshCountDown(time);
+  timeOut = setTimeout(() => {
+    // Refresh the page
+    window.location.reload();
+  }, time);
+}
+
+function stopTimeOut() {
+  stopCountDown();
+  clearTimeout(timeOut);
+}
+
+function resetTimeout(time) {
+  stopTimeOut();
+  startTimeout(time);
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function waitFor(condition, callback) {
+  if (!condition()) {
+    w.setTimeout(waitFor.bind(null, condition, callback), 100); /* this checks the flag every 100 milliseconds*/
+  } else {
+    callback();
+  }
+}
+
+var refreshCountDownInterval;
+function refreshCountDown(refreshTime) {
+  let refreshDate = new Date(Date.now() + refreshTime);
+  let targetSpanId = "refreshCountDown";
+  // Update the count down every 1 second
+  refreshCountDownInterval = setInterval(function () {
+    // Get today's date and time
+    var now = new Date().getTime();
+
+    // Find the distance between now and the count down date
+    var distance = refreshDate - now;
+
+    // Time calculations for days, hours, minutes and seconds
+    var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    // Display the result in the element with id="demo"
+    //document.getElementById(targetSpanId).innerHTML = (days > 0 && days + "d ") + (hours > 0 && hours + "h ") + (minutes > 0 && minutes + "m ") + seconds + "s ";
+    document.title = `Bot refreshing in ${(days > 0 && days + "d ") + (hours > 0 && hours + "h ") + (minutes > 0 && minutes + "m ") + seconds + "s"}`;
+    // If the count down is finished, write some text
+    if (distance < 0) {
+      clearInterval(refreshCountDownInterval);
+      //document.getElementById(targetSpanId).innerHTML = "EXPIRED";
+      document.title = "Bot is stopped";
+    }
+  }, 1000);
+}
+
+function stopCountDown() {
+  clearInterval(refreshCountDownInterval);
+  document.title = "Bot is stopped";
+}
